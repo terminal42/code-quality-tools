@@ -1,0 +1,45 @@
+{
+    "name": "terminal42/code-quality-tools",
+    "type": "composer-plugin",
+    "description": "Highly opinionated code quality tools for terminal42 projects.",
+    "keywords": ["contao", "ci", "cq", "code-style", "rector"],
+    "homepage": "https://github.com/terminal42/code-quality-tools",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "terminal42 gmbh",
+            "homepage": "http://www.terminal42.ch"
+        }
+    ],
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/terminal42"
+        },
+        {
+            "type": "other",
+            "url": "https://ko-fi.com/terminal42"
+        }
+    ],
+    "require": {
+        "composer-plugin-api": "^2.0",
+        "composer/semver": "^3.0",
+        "symfony/filesystem": "^3 || ^4 || ^5 || ^6 || ^7 || ^8",
+        "symfony/process": "^4.2 || ^5 || ^6 || ^7 || ^8"
+    },
+    "require-dev": {
+        "composer/composer": "^1.1 || ^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Terminal42\\CodeQualityTools\\": "src/"
+        }
+    },
+    "extra": {
+        "class": "Terminal42\\CodeQualityTools\\Composer\\Plugin"
+    },
+    "scripts": {
+        "cs-fixer": "@php tools/ecs/vendor/bin/ecs check deployer src $(find tools -path '*/vendor' -prune -o -type f -name '*.php' -print) --config tools/ecs/config/contao.php --fix --ansi",
+        "rector": "@php tools/rector/vendor/bin/rector process deployer src $(find tools -path '*/vendor' -prune -o -type f -name '*.php' -print) --config tools/rector/config.php --ansi"
+    }
+}

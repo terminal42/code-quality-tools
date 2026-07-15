@@ -1,0 +1,6 @@
+/tools/**/node_modules
+/tools/**/vendor
+/tools/**/composer.lock
+/tools/**/package-lock.json
+/vendor
+/composer.lock
