@@ -31,7 +31,7 @@ if (file_exists(getcwd().'/composer.json')) {
 }
 
 $builder = ECSConfig::configure()
-    ->withSets([__DIR__.'/../vendor/contao/easy-coding-standard/config/contao.php'])
+    ->withSets([__DIR__.'/vendor/contao/easy-coding-standard/config/contao.php'])
     ->withConfiguredRule(HeaderCommentFixer::class, ['header' => ''])
     ->withSkip($skip)
     ->withParallel()
