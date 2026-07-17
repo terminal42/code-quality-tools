@@ -39,7 +39,7 @@
         "class": "Terminal42\\CodeQualityTools\\Composer\\Plugin"
     },
     "scripts": {
-        "cs-fixer": "@php tools/ecs/vendor/bin/ecs check deployer src $(find tools -path '*/vendor' -prune -o -type f -name '*.php' -print) --config tools/ecs/config/contao.php --fix --ansi",
-        "rector": "@php tools/rector/vendor/bin/rector process deployer src $(find tools -path '*/vendor' -prune -o -type f -name '*.php' -print) --config tools/rector/config.php --ansi"
+        "cs-fixer": "@php tools/ecs/vendor/bin/ecs check src $(find tools -path '*/vendor' -prune -o -type f -name '*.php' -print) --config tools/ecs/config.php --fix --ansi",
+        "rector": "@php tools/rector/vendor/bin/rector process src $(find tools -path '*/vendor' -prune -o -type f -name '*.php' -print) --config tools/rector/config.php --ansi"
     }
 }
