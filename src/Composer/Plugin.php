@@ -101,18 +101,11 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         }
 
         $originalWorkingDir = getcwd();
+        $installNodeDependencies = $this->filesystem->exists($originalWorkingDir.'/package.json');
+        $installComposerDependencies = $this->filesystem->exists($originalWorkingDir.'/composer.json');
 
         foreach ($binRoots as $binRoot) {
-            if (
-                $this->filesystem->exists($binRoot.'/package.json')
-                && (
-                    $this->filesystem->exists($originalWorkingDir.'/layout')
-                    || (
-                        $this->filesystem->exists($originalWorkingDir.'/assets')
-                        && !$this->isProject($composer)
-                    )
-                )
-            ) {
+            if ($installNodeDependencies && $this->filesystem->exists($binRoot.'/package.json')) {
                 Process::fromShellCommandline('npm install')
                     ->setWorkingDirectory($binRoot)
                     ->mustRun(
@@ -123,7 +116,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
                 ;
             }
 
-            if ($this->filesystem->exists($binRoot.'/composer.json')) {
+            if ($installComposerDependencies && $this->filesystem->exists($binRoot.'/composer.json')) {
                 $this->executeInNamespace($application, $binRoot, $input);
 
                 chdir($originalWorkingDir);
