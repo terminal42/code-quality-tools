@@ -1,0 +1,43 @@
+name: Code Quality tools
+
+on:
+    workflow_call: ~
+
+permissions: read-all
+
+jobs:
+    code_quality:
+        name: code-quality
+        runs-on: ubuntu-latest
+        steps:
+            - name: Setup PHP
+              if: ${{ hashFiles('composer.json') != '' }}
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  extensions: dom, fileinfo, filter, gd, hash, intl, json, mbstring, mysqli, pcre, pdo_mysql, zlib
+                  coverage: none
+
+            -   name: Install Node.js
+                if: ${{ hashFiles('package.json') != '' }}
+                uses: actions/setup-node@v6
+                with:
+                    node-version: 24
+            -   run: corepack enable
+
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  show-progress: false
+                  persist-credentials: false
+
+            - name: Install Composer dependencies
+              if: ${{ hashFiles('composer.json') != '' }}
+              uses: ramsey/composer-install@v3
+
+            - name: Install Node packages
+              if: ${{ hashFiles('package.json') != '' }}
+              run: npm install
+
+            - name: Run all code quality tools
+              run: composer run ci-code-quality
