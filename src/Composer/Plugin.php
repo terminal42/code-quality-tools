@@ -10,6 +10,7 @@ use Composer\Console\Application;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Factory;
 use Composer\IO\IOInterface;
+use Composer\Package\BasePackage;
 use Composer\Package\Link;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
@@ -178,6 +179,56 @@ class Plugin implements PluginInterface, EventSubscriberInterface
             $prettyConstraint,
         );
         $package->setRequires($requires);
+
+        $stabilityFlags = $package->getStabilityFlags();
+        $stabilityFlag = $stabilityFlags[$packageName] ?? BasePackage::STABILITY_STABLE;
+        $minimumStability = BasePackage::STABILITIES[$package->getMinimumStability()];
+
+        foreach ($constraints as $constraint) {
+            $stability = $this->extractStability($constraint);
+
+            if ($minimumStability <= $stability) {
+                $stabilityFlag = max($stabilityFlag, $stability);
+            }
+        }
+
+        $stabilityFlags[$packageName] = $stabilityFlag;
+        $package->setStabilityFlags($stabilityFlags);
+    }
+
+    private function extractStability(string $constraint): int
+    {
+        $orConstraints = preg_split('{\s*\|\|?\s*}', trim($constraint)) ?: [];
+        $constraints = [];
+
+        foreach ($orConstraints as $orConstraint) {
+            $andConstraints = preg_split(
+                '{(?<!^|as|[=>< ,]) *(?<!-)[, ](?!-) *(?!,|as|$)}',
+                $orConstraint,
+            ) ?: [];
+            array_push($constraints, ...$andConstraints);
+        }
+
+        $inferredStability = BasePackage::STABILITY_STABLE;
+        $explicitStability = null;
+
+        foreach ($constraints as $constraint) {
+            if (preg_match('{@(?<stability>stable|RC|beta|alpha|dev)$}i', $constraint, $match)) {
+                $stability = VersionParser::normalizeStability($match['stability']);
+                $explicitStability = max(
+                    $explicitStability ?? BasePackage::STABILITY_STABLE,
+                    BasePackage::STABILITIES[$stability],
+                );
+
+                continue;
+            }
+
+            $normalizedConstraint = preg_replace('{^([^,\s@]+) as .+$}', '$1', $constraint) ?? $constraint;
+            $stability = VersionParser::parseStability($normalizedConstraint);
+            $inferredStability = max($inferredStability, BasePackage::STABILITIES[$stability]);
+        }
+
+        return $explicitStability ?? $inferredStability;
     }
 
     private function executeInNamespace(Application $application, string $namespace, InputInterface $input): int
