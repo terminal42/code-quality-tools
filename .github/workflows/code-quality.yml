@@ -23,7 +23,10 @@ jobs:
                 uses: actions/setup-node@v6
                 with:
                     node-version: 24
-            -   run: corepack enable
+
+            -   name: Enable core pack
+                if: ${{ hashFiles('package.json') != '' }}
+                run: corepack enable
 
             - name: Checkout
               uses: actions/checkout@v6
