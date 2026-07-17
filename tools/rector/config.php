@@ -11,12 +11,19 @@ use Rector\PHPUnit\PHPUnit60\Rector\ClassMethod\AddDoesNotPerformAssertionToNonA
 use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;
+use Terminal42\CodeQualityTools\Composer\RootComposerJson;
+
+require_once __DIR__.'/../../src/Composer/RootComposerJson.php';
 
 return static function (RectorConfig $rectorConfig): void {
     $versionParser = new VersionParser();
-    $composerJson = file_exists(getcwd().'/composer.json') ? json_decode(file_get_contents(getcwd().'/composer.json'), true, 512, JSON_THROW_ON_ERROR) : null;
+    $annotationToAttributesSets = class_exists(ContaoSetList::class)
+        ? [ContaoSetList::ANNOTATIONS_TO_ATTRIBUTES, DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES]
+        : [DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES];
 
-    if ($composerJson && ($phpConstraint = $composerJson['config']['platform']['php'] ?? $composerJson['require']['php'] ?? null)) {
+    $composerJson = RootComposerJson::fromCurrentWorkingDirectory();
+
+    if ($phpConstraint = $composerJson->platformRequirement('php') ?? $composerJson->requirement('php')) {
         $parsedConstraints = $versionParser->parseConstraints($phpConstraint);
 
         $setList = match (true) {
@@ -26,11 +33,11 @@ return static function (RectorConfig $rectorConfig): void {
             $parsedConstraints->matches($versionParser->parseConstraints('< 7.4')) => [LevelSetList::UP_TO_PHP_73],
             $parsedConstraints->matches($versionParser->parseConstraints('< 8.0')) => [LevelSetList::UP_TO_PHP_74],
             $parsedConstraints->matches($versionParser->parseConstraints('< 8.1')) => [LevelSetList::UP_TO_PHP_80],
-            $parsedConstraints->matches($versionParser->parseConstraints('< 8.2')) => [LevelSetList::UP_TO_PHP_81, ContaoSetList::ANNOTATIONS_TO_ATTRIBUTES, DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES],
-            $parsedConstraints->matches($versionParser->parseConstraints('< 8.3')) => [LevelSetList::UP_TO_PHP_82, ContaoSetList::ANNOTATIONS_TO_ATTRIBUTES, DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES],
-            $parsedConstraints->matches($versionParser->parseConstraints('< 8.4')) => [LevelSetList::UP_TO_PHP_83, ContaoSetList::ANNOTATIONS_TO_ATTRIBUTES, DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES],
-            $parsedConstraints->matches($versionParser->parseConstraints('< 8.5')) => [LevelSetList::UP_TO_PHP_84, ContaoSetList::ANNOTATIONS_TO_ATTRIBUTES, DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES],
-            $parsedConstraints->matches($versionParser->parseConstraints('^8.5')) => [LevelSetList::UP_TO_PHP_85, ContaoSetList::ANNOTATIONS_TO_ATTRIBUTES, DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES],
+            $parsedConstraints->matches($versionParser->parseConstraints('< 8.2')) => [LevelSetList::UP_TO_PHP_81, ...$annotationToAttributesSets],
+            $parsedConstraints->matches($versionParser->parseConstraints('< 8.3')) => [LevelSetList::UP_TO_PHP_82, ...$annotationToAttributesSets],
+            $parsedConstraints->matches($versionParser->parseConstraints('< 8.4')) => [LevelSetList::UP_TO_PHP_83, ...$annotationToAttributesSets],
+            $parsedConstraints->matches($versionParser->parseConstraints('< 8.5')) => [LevelSetList::UP_TO_PHP_84, ...$annotationToAttributesSets],
+            $parsedConstraints->matches($versionParser->parseConstraints('^8.5')) => [LevelSetList::UP_TO_PHP_85, ...$annotationToAttributesSets],
         };
 
         if (!empty($setList)) {
@@ -38,7 +45,7 @@ return static function (RectorConfig $rectorConfig): void {
         }
     }
 
-    if ($composerJson && ($phpunitConstraint = $composerJson['require-dev']['phpunit/phpunit'] ?? null)) {
+    if ($phpunitConstraint = $composerJson->requirement('phpunit/phpunit')) {
         $lowerBound = $versionParser->parseConstraints($phpunitConstraint)->getLowerBound();
 
         $setList = [

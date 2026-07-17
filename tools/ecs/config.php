@@ -8,6 +8,9 @@ use Contao\EasyCodingStandard\Fixer\TypeHintOrderFixer;
 use PhpCsFixer\Fixer\Comment\HeaderCommentFixer;
 use PhpCsFixer\Fixer\Whitespace\MethodChainingIndentationFixer;
 use Symplify\EasyCodingStandard\Config\ECSConfig;
+use Terminal42\CodeQualityTools\Composer\RootComposerJson;
+
+require_once __DIR__.'/../../src/Composer/RootComposerJson.php';
 
 $skip = [
     CommentLengthFixer::class,
@@ -17,16 +20,14 @@ $skip = [
     ],
 ];
 
-if (file_exists(getcwd().'/composer.json')) {
-    $versionParser = new VersionParser();
-    $composerJson = json_decode(file_get_contents(getcwd().'/composer.json'), true, 512, JSON_THROW_ON_ERROR);
+$composerJson = RootComposerJson::fromCurrentWorkingDirectory();
+$versionParser = new VersionParser();
 
-    if ($phpConstraint = $composerJson['config']['platform']['php'] ?? $composerJson['require']['php'] ?? null) {
-        $parsedConstraints = $versionParser->parseConstraints($phpConstraint);
+if ($phpConstraint = $composerJson->platformRequirement('php') ?? $composerJson->requirement('php')) {
+    $parsedConstraints = $versionParser->parseConstraints($phpConstraint);
 
-        if ($parsedConstraints->matches($versionParser->parseConstraints('< 8'))) {
-            $skip[] = TypeHintOrderFixer::class;
-        }
+    if ($parsedConstraints->matches($versionParser->parseConstraints('< 8'))) {
+        $skip[] = TypeHintOrderFixer::class;
     }
 }
 
