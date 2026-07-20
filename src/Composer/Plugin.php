@@ -4,40 +4,19 @@ declare(strict_types=1);
 
 namespace Terminal42\CodeQualityTools\Composer;
 
-use Composer\Command\BaseCommand;
 use Composer\Composer;
-use Composer\Console\Application;
 use Composer\EventDispatcher\EventSubscriberInterface;
-use Composer\Factory;
 use Composer\IO\IOInterface;
-use Composer\Package\BasePackage;
-use Composer\Package\Link;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
-use Composer\Semver\Constraint\MultiConstraint;
-use Composer\Semver\VersionParser;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\StringInput;
+use Composer\Util\Platform;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 class Plugin implements PluginInterface, EventSubscriberInterface
 {
-    private const TOOL_REQUIREMENTS = [
-        'rector' => [
-            'contao/manager-bundle' => [
-                'contao/contao-rector' => 'dev-main',
-            ],
-            'contao/core-bundle' => [
-                'contao/contao-rector' => 'dev-main',
-            ],
-        ],
-    ];
-
     private Filesystem $filesystem;
-
-    private RootComposerJson|null $rootComposerJson = null;
 
     public function __construct()
     {
@@ -66,7 +45,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         }
 
         $event->getIO()->write('<warning>Installing tools …</warning>');
-        $this->executeAllNamespaces(new StringInput('install'), $event->getIO(), $event->getComposer());
+        $this->executeAllNamespaces('install', $event->getIO());
     }
 
     public function updateTools(Event $event): void
@@ -76,7 +55,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         }
 
         $event->getIO()->write('<warning>Updating tools …</warning>');
-        $this->executeAllNamespaces(new StringInput('update'), $event->getIO(), $event->getComposer());
+        $this->executeAllNamespaces('update', $event->getIO());
     }
 
     public static function getSubscribedEvents(): array
@@ -87,12 +66,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         ];
     }
 
-    private function executeAllNamespaces(InputInterface $input, IOInterface $io, Composer $composer): void
+    private function executeAllNamespaces(string $command, IOInterface $io): void
     {
-        $application = new Application();
-        $output = Factory::createOutput();
-        $this->rootComposerJson = RootComposerJson::fromCurrentWorkingDirectory();
-
         $binRoots = glob(__DIR__.'/../../tools/*', GLOB_ONLYDIR);
         if (empty($binRoots)) {
             $io->writeError('<warning>Couldn\'t find any tool namespace.</warning>');
@@ -100,166 +75,64 @@ class Plugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $originalWorkingDir = getcwd();
-        $installNodeDependencies = $this->filesystem->exists($originalWorkingDir.'/package.json');
-        $installComposerDependencies = $this->filesystem->exists($originalWorkingDir.'/composer.json');
-
-        foreach ($binRoots as $binRoot) {
-            if ($installNodeDependencies && $this->filesystem->exists($binRoot.'/package.json')) {
-                Process::fromShellCommandline('npm install')
-                    ->setWorkingDirectory($binRoot)
-                    ->mustRun(
-                        static function (string $type, string $buffer) use ($output): void {
-                            $output->write($buffer);
-                        },
-                    )
-                ;
-            }
-
-            if ($installComposerDependencies && $this->filesystem->exists($binRoot.'/composer.json')) {
-                $this->executeInNamespace($application, $binRoot, $input);
-
-                chdir($originalWorkingDir);
-                $this->resetComposers($application);
-            }
-        }
+        $processManager = new ProcessManager();
+        $this->addNodeProcesses($processManager, $binRoots);
+        $this->addComposerProcesses($processManager, $binRoots, $command);
+        $processManager->run($io);
     }
 
-    private function addToolRequirements(Application $application, string $namespace): void
+    /**
+     * @param list<string> $namespaces
+     */
+    private function addNodeProcesses(ProcessManager $processManager, array $namespaces): void
     {
-        foreach ($this->resolveToolRequirements($namespace) as $package => $constraints) {
-            $this->addToolRequirement($application->getComposer(), $package, $constraints);
+        if (!$this->hasProjectFile('package.json')) {
+            return;
+        }
+
+        foreach ($namespaces as $namespace) {
+            if ($this->filesystem->exists($namespace.'/package.json')) {
+                $process = new Process(['npm', 'install'], $namespace);
+                $processManager->add($process->setTimeout(null), basename($namespace).' (npm)');
+            }
         }
     }
 
     /**
-     * @return array<string, list<string>>
+     * @param list<string> $namespaces
      */
-    private function resolveToolRequirements(string $namespace): array
+    private function addComposerProcesses(ProcessManager $processManager, array $namespaces, string $command): void
     {
-        $resolvedRequirements = [];
-        $requirementsByRootPackage = self::TOOL_REQUIREMENTS[basename($namespace)] ?? [];
+        if (!$this->hasProjectFile('composer.json')) {
+            return;
+        }
 
-        foreach ($requirementsByRootPackage as $rootPackage => $requirements) {
-            if (!$this->rootComposerJson?->hasRequirement($rootPackage)) {
+        $installer = ComposerNamespaceInstaller::fromCurrentWorkingDirectory();
+        $composerBinary = Platform::getEnv('COMPOSER_BINARY');
+
+        foreach ($namespaces as $namespace) {
+            if (!$this->filesystem->exists($namespace.'/composer.json')) {
                 continue;
             }
 
-            foreach ($requirements as $package => $constraint) {
-                $resolvedRequirements[$package][] = $constraint;
-                $resolvedRequirements[$package] = array_values(array_unique($resolvedRequirements[$package]));
-            }
-        }
-
-        return $resolvedRequirements;
-    }
-
-    /**
-     * @param non-empty-list<string> $constraints
-     */
-    private function addToolRequirement(Composer $composer, string $packageName, array $constraints): void
-    {
-        $package = $composer->getPackage();
-        $requires = $package->getRequires();
-        $versionParser = new VersionParser();
-        $parsedConstraints = array_map($versionParser->parseConstraints(...), $constraints);
-        $prettyConstraint = implode(' && ', $constraints);
-        $requires[$packageName] = new Link(
-            $package->getName(),
-            $packageName,
-            MultiConstraint::create($parsedConstraints),
-            Link::TYPE_REQUIRE,
-            $prettyConstraint,
-        );
-        $package->setRequires($requires);
-
-        $stabilityFlags = $package->getStabilityFlags();
-        $stabilityFlag = $stabilityFlags[$packageName] ?? BasePackage::STABILITY_STABLE;
-        $minimumStability = BasePackage::STABILITIES[$package->getMinimumStability()];
-
-        foreach ($constraints as $constraint) {
-            $stability = $this->extractStability($constraint);
-
-            if ($minimumStability <= $stability) {
-                $stabilityFlag = max($stabilityFlag, $stability);
-            }
-        }
-
-        $stabilityFlags[$packageName] = $stabilityFlag;
-        $package->setStabilityFlags($stabilityFlags);
-    }
-
-    private function extractStability(string $constraint): int
-    {
-        $orConstraints = preg_split('{\s*\|\|?\s*}', trim($constraint)) ?: [];
-        $constraints = [];
-
-        foreach ($orConstraints as $orConstraint) {
-            $andConstraints = preg_split(
-                '{(?<!^|as|[=>< ,]) *(?<!-)[, ](?!-) *(?!,|as|$)}',
-                $orConstraint,
-            ) ?: [];
-            array_push($constraints, ...$andConstraints);
-        }
-
-        $inferredStability = BasePackage::STABILITY_STABLE;
-        $explicitStability = null;
-
-        foreach ($constraints as $constraint) {
-            if (preg_match('{@(?<stability>stable|RC|beta|alpha|dev)$}i', $constraint, $match)) {
-                $stability = VersionParser::normalizeStability($match['stability']);
-                $explicitStability = max(
-                    $explicitStability ?? BasePackage::STABILITY_STABLE,
-                    BasePackage::STABILITIES[$stability],
-                );
-
-                continue;
+            if ($installer->hasDynamicRequirements($namespace)) {
+                $process = new Process([PHP_BINARY, __DIR__.'/../../bin/install-tool', $namespace, $command]);
+            } else {
+                $composerCommand = \is_string($composerBinary)
+                    ? [PHP_BINARY, $composerBinary, $command, '--quiet']
+                    : ['composer', $command, '--quiet'];
+                $process = new Process($composerCommand, $namespace);
             }
 
-            $normalizedConstraint = preg_replace('{^([^,\s@]+) as .+$}', '$1', $constraint) ?? $constraint;
-            $stability = VersionParser::parseStability($normalizedConstraint);
-            $inferredStability = max($inferredStability, BasePackage::STABILITIES[$stability]);
-        }
-
-        return $explicitStability ?? $inferredStability;
-    }
-
-    private function executeInNamespace(Application $application, string $namespace, InputInterface $input): int
-    {
-        if (!$this->filesystem->exists($namespace)) {
-            $this->filesystem->mkdir($namespace);
-        }
-
-        chdir($namespace);
-
-        // some plugins require access to composer file e.g. Symfony Flex
-        if (!$this->filesystem->exists(Factory::getComposerFile())) {
-            $this->filesystem->dumpFile(Factory::getComposerFile(), '{}');
-        }
-
-        $this->addToolRequirements($application, $namespace);
-
-        $input = new StringInput($input.' --quiet --working-dir=.');
-        $output = Factory::createOutput();
-
-        $output->write('<info>Run with <comment>'.$input->__toString().'</comment></info>', true, IOInterface::VERBOSE);
-
-        return $application->doRun($input, $output);
-    }
-
-    private function resetComposers(Application $application): void
-    {
-        $application->resetComposer();
-
-        foreach ($application->all() as $command) {
-            if ($command instanceof BaseCommand) {
-                $command->resetComposer();
-            }
+            $processManager->add($process->setTimeout(null), basename($namespace).' (composer)');
         }
     }
 
-    private function isProject(Composer $composer): bool
+    private function hasProjectFile(string $file): bool
     {
-        return 'project' === $composer->getPackage()->getType();
+        $projectDirectory = getcwd();
+        \assert(false !== $projectDirectory);
+
+        return $this->filesystem->exists($projectDirectory.'/'.$file);
     }
 }

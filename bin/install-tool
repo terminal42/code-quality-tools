@@ -1,0 +1,30 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Terminal42\CodeQualityTools\Composer\ComposerNamespaceInstaller;
+
+$autoloaded = false;
+foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php'] as $autoloadFile) {
+    if (file_exists($autoloadFile)) {
+        require $autoloadFile;
+        $autoloaded = true;
+
+        break;
+    }
+}
+
+if (!$autoloaded) {
+    fwrite(STDERR, "Could not locate the Composer autoloader.\n");
+
+    exit(1);
+}
+
+if (3 !== $argc || !in_array($argv[2], ['install', 'update'], true)) {
+    fwrite(STDERR, "Usage: install-tool <namespace> <install|update>\n");
+
+    exit(1);
+}
+
+exit(ComposerNamespaceInstaller::fromCurrentWorkingDirectory()->run($argv[1], $argv[2]));
