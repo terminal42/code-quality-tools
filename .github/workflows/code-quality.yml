@@ -9,8 +9,6 @@ jobs:
     code_quality:
         name: code-quality
         runs-on: ubuntu-latest
-        env:
-            CODE_QUALITY_CACHE_DIR: ${{ runner.temp }}/code-quality-cache
         steps:
             - name: Checkout
               uses: actions/checkout@v6
@@ -48,17 +46,19 @@ jobs:
               id: code-quality-cache
               uses: actions/cache/restore@v5
               with:
-                  path: ${{ env.CODE_QUALITY_CACHE_DIR }}
+                  path: ${{ runner.temp }}/code-quality-cache
                   key: code-quality-${{ runner.os }}-${{ github.run_id }}
                   restore-keys: |
                       code-quality-${{ runner.os }}-
 
             - name: Run all code quality tools
               run: composer run code-quality
+              env:
+                  CODE_QUALITY_CACHE_DIR: ${{ runner.temp }}/code-quality-cache
 
             - name: Save code quality caches
               if: ${{ !cancelled() }}
               uses: actions/cache/save@v5
               with:
-                  path: ${{ env.CODE_QUALITY_CACHE_DIR }}
+                  path: ${{ runner.temp }}/code-quality-cache
                   key: ${{ steps.code-quality-cache.outputs.cache-primary-key }}
