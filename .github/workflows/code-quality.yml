@@ -54,7 +54,7 @@ jobs:
                       code-quality-${{ runner.os }}-
 
             - name: Run all code quality tools
-              run: composer run ci-code-quality
+              run: composer run code-quality
 
             - name: Save code quality caches
               if: ${{ !cancelled() }}

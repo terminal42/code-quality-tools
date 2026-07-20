@@ -34,7 +34,7 @@ Add the tools required by the project to the `scripts` section of its `composer.
         "cs-fixer": "@php vendor/terminal42/code-quality-tools/tools/ecs/vendor/bin/ecs check src tests --config vendor/terminal42/code-quality-tools/tools/ecs/config.php --fix --ansi",
         "rector": "@php vendor/terminal42/code-quality-tools/tools/rector/vendor/bin/rector process src tests --config vendor/terminal42/code-quality-tools/tools/rector/config.php --ansi",
         "phpstan": "@php vendor/terminal42/code-quality-tools/tools/phpstan/vendor/bin/phpstan analyze src tests --configuration vendor/terminal42/code-quality-tools/tools/phpstan/config.php --ansi",
-        "ci-code-quality": [
+        "code-quality": [
             "@cs-fixer",
             "@rector",
             "@phpstan"
@@ -46,7 +46,7 @@ Add the tools required by the project to the `scripts` section of its `composer.
 Adjust `src`, `tests`, and the other paths to match the project. Run all configured checks with:
 
 ```bash
-composer run ci-code-quality
+composer run code-quality
 ```
 
 The other bundled PHP tools can be added in the same way:
@@ -78,7 +78,7 @@ Biome, ESLint, and Stylelint are also installed in isolated tool directories. Ad
         "biome": "vendor/terminal42/code-quality-tools/tools/biome/node_modules/.bin/biome check assets layout --config-path vendor/terminal42/code-quality-tools/tools/biome/biome.json --write",
         "eslint": "vendor/terminal42/code-quality-tools/tools/eslint/node_modules/.bin/eslint assets layout --config vendor/terminal42/code-quality-tools/tools/eslint/eslint.config.js --fix",
         "stylelint": "vendor/terminal42/code-quality-tools/tools/stylelint/node_modules/.bin/stylelint \"assets/**/*.{css,scss}\" \"layout/**/*.{css,scss}\" --config vendor/terminal42/code-quality-tools/tools/stylelint/stylelint.config.js --fix",
-        "ci-code-quality": [
+        "code-quality": [
             "@biome",
             "@eslint",
             "@stylelint"
@@ -87,7 +87,7 @@ Biome, ESLint, and Stylelint are also installed in isolated tool directories. Ad
 }
 ```
 
-When combining PHP and Node tools, keep a single `ci-code-quality` array containing every selected script alias.
+When combining PHP and Node tools, keep a single `code-quality` array containing every selected script alias.
 
 The shared ESLint configuration additionally reads `.eslintrc.json`, while Stylelint reads `.stylelintrc`, when those files exist in the project root.
 
@@ -111,4 +111,4 @@ jobs:
         uses: 'terminal42/code-quality-tools/.github/workflows/code-quality.yml@main'
 ```
 
-The reusable workflow installs the project dependencies and runs `composer run ci-code-quality`. Every script referenced by `ci-code-quality` must therefore be available in the project.
+The reusable workflow installs the project dependencies and runs `composer run code-quality`. Every script referenced by `code-quality` must therefore be available in the project.
