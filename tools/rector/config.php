@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Composer\Semver\VersionParser;
 use Contao\Rector\Set\ContaoSetList;
+use Rector\Caching\ValueObject\Storage\FileCacheStorage;
 use Rector\Config\RectorConfig;
 use Rector\Doctrine\Set\DoctrineSetList;
 use Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector;
@@ -16,6 +17,7 @@ use Terminal42\CodeQualityTools\Composer\RootComposerJson;
 require_once __DIR__.'/../../src/Composer/RootComposerJson.php';
 
 return static function (RectorConfig $rectorConfig): void {
+    $cacheDirectory = getenv('CODE_QUALITY_CACHE_DIR') ?: sys_get_temp_dir();
     $versionParser = new VersionParser();
     $annotationToAttributesSets = class_exists(ContaoSetList::class)
         ? [ContaoSetList::ANNOTATIONS_TO_ATTRIBUTES, DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES]
@@ -96,6 +98,8 @@ return static function (RectorConfig $rectorConfig): void {
 
     $rectorConfig->fileExtensions(['php']);
     $rectorConfig->parallel();
+    $rectorConfig->cacheDirectory($cacheDirectory.'/rector');
+    $rectorConfig->cacheClass(FileCacheStorage::class);
 
     if (file_exists(getcwd().'/rector.php')) {
         $rectorConfig->import(getcwd().'/rector.php');

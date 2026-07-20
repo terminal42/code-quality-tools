@@ -21,6 +21,7 @@ $skip = [
 ];
 
 $composerJson = RootComposerJson::fromCurrentWorkingDirectory();
+$cacheDirectory = getenv('CODE_QUALITY_CACHE_DIR') ?: sys_get_temp_dir();
 $versionParser = new VersionParser();
 
 if ($phpConstraint = $composerJson->platformRequirement('php') ?? $composerJson->requirement('php')) {
@@ -37,7 +38,7 @@ $builder = ECSConfig::configure()
     ->withSkip($skip)
     ->withParallel()
     ->withSpacing(null, "\n")
-    ->withCache(sys_get_temp_dir().'/ecs_cache')
+    ->withCache($cacheDirectory.'/ecs')
 ;
 
 return new class($builder) {

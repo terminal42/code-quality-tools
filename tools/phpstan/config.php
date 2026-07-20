@@ -20,4 +20,8 @@ foreach ($files as $file) {
 $config = [];
 $config['includes'] = $includes;
 
+if ($cacheDirectory = getenv('CODE_QUALITY_CACHE_DIR')) {
+    $config['parameters']['tmpDir'] = $cacheDirectory.'/phpstan';
+}
+
 return $config;
