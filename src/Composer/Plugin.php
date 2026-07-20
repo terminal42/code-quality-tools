@@ -44,7 +44,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $event->getIO()->write('<warning>Installing tools …</warning>');
+        $event->getIO()->write('<warning>Installing code quality tools …</warning>');
         $this->executeAllNamespaces('install', $event->getIO());
     }
 
@@ -54,7 +54,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $event->getIO()->write('<warning>Updating tools …</warning>');
+        $event->getIO()->write('<warning>Updating code quality tools …</warning>');
         $this->executeAllNamespaces('update', $event->getIO());
     }
 
