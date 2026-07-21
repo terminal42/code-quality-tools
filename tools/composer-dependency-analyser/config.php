@@ -30,6 +30,4 @@ $config
     ->ignoreErrorsOnPackage('terminal42/code-quality-tools', [ErrorType::UNUSED_DEPENDENCY])
 ;
 
-$composerJson = json_decode(file_get_contents(getcwd().'/composer.json'), true, 512, JSON_THROW_ON_ERROR);
-
 return $config;
