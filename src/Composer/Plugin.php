@@ -130,7 +130,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
     private function hasProjectFile(string $file): bool
     {
-        $projectDirectory = getcwd();
+        $projectDirectory = $_ENV['PROJECT_ROOT'] ?? getcwd();
         \assert(false !== $projectDirectory);
 
         return $this->filesystem->exists($projectDirectory.'/'.$file);
