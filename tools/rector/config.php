@@ -47,30 +47,12 @@ return static function (RectorConfig $rectorConfig): void {
         }
     }
 
-    if ($phpunitConstraint = $composerJson->requirement('phpunit/phpunit')) {
-        $lowerBound = $versionParser->parseConstraints($phpunitConstraint)->getLowerBound();
-
-        $setList = [
-            '>= 4.0' => [PHPUnitSetList::PHPUNIT_40],
-            '>= 5.0' => [PHPUnitSetList::PHPUNIT_50],
-            '>= 6.0' => [PHPUnitSetList::PHPUNIT_60],
-            '>= 7.0' => [PHPUnitSetList::PHPUNIT_70],
-            '>= 8.0' => [PHPUnitSetList::PHPUNIT_80],
-            '>= 9.0' => [PHPUnitSetList::PHPUNIT_90],
-            '>= 10.0' => [PHPUnitSetList::PHPUNIT_100, PHPUnitSetList::ANNOTATIONS_TO_ATTRIBUTES],
-            '>= 11.0' => [PHPUnitSetList::PHPUNIT_110],
-            '>= 12.0' => [PHPUnitSetList::PHPUNIT_120],
-        ];
-
-        $setList = array_filter(
-            $setList,
-            static fn ($constraint) => $lowerBound->compareTo($versionParser->parseConstraints($constraint)->getLowerBound(), '>'),
-            ARRAY_FILTER_USE_KEY,
-        );
-
-        if (!empty($setList)) {
-            $rectorConfig->sets(array_merge([PHPUnitSetList::PHPUNIT_CODE_QUALITY], ...array_values($setList)));
-        }
+    if ($composerJson->requirement('phpunit/phpunit')) {
+        $rectorConfig->sets([
+            PHPUnitSetList::PHPUNIT_CODE_QUALITY,
+            PHPUnitSetList::ANNOTATIONS_TO_ATTRIBUTES,
+            PHPUnitSetList::COMPOSER_BASED,
+        ]);
     }
 
     // https://getrector.com/blog/5-common-mistakes-in-rector-config-and-how-to-avoid-them
