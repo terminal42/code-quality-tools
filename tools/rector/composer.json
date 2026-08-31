@@ -1,6 +1,5 @@
 {
     "require": {
-        "rector/rector": "^2.0",
-        "composer/semver": "^3.4"
+        "rector/rector": "^2.6.5"
     }
 }
