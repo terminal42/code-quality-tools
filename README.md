@@ -112,3 +112,13 @@ jobs:
 ```
 
 The reusable workflow installs the project dependencies and runs `composer run code-quality`. Every script referenced by `code-quality` must therefore be available in the project.
+
+PHP defaults to 8.4. Override it with the optional `php-version` input to match the project's runtime and dependency requirements:
+
+```yaml
+jobs:
+    code-quality:
+        uses: 'terminal42/code-quality-tools/.github/workflows/code-quality.yml@main'
+        with:
+            php-version: '8.5'
+```
