@@ -62,6 +62,7 @@ const configs = [{
 
         'import/prefer-default-export': 'off',
         'class-methods-use-this': 'off',
+        'object-curly-newline': 'off',
     },
 }, globalIgnores(['layout/vendor/*'])];
 
