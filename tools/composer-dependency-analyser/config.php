@@ -13,10 +13,13 @@ $config = null;
 
 if (file_exists('./composer-dependency-analyser.php')) {
     trigger_error('Using config '.getcwd().'/composer-dependency-analyser.php');
+
     $config = require './composer-dependency-analyser.php';
 } elseif (file_exists('./depcheck.php')) {
     trigger_error('Using config '.getcwd().'/depcheck.php');
+
     @trigger_error('Please rename your "depcheck.php" file to "composer-dependency-analyser.php".', E_USER_DEPRECATED);
+
     $config = require './depcheck.php';
 }
 

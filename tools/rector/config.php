@@ -15,6 +15,7 @@ require_once __DIR__.'/../../src/Composer/RootComposerJson.php';
 
 return static function (RectorConfig $rectorConfig): void {
     $cacheDirectory = getenv('CODE_QUALITY_CACHE_DIR') ?: sys_get_temp_dir();
+
     $annotationToAttributesSets = class_exists(ContaoSetList::class)
         ? [ContaoSetList::ANNOTATIONS_TO_ATTRIBUTES, DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES]
         : [DoctrineSetList::ANNOTATIONS_TO_ATTRIBUTES];

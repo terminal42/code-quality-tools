@@ -47,6 +47,7 @@ final class ComposerNamespaceInstaller
     public function run(string $namespace, string $command): int
     {
         $application = new Application();
+
         chdir($namespace);
 
         // some plugins require access to composer file e.g. Symfony Flex
@@ -55,7 +56,9 @@ final class ComposerNamespaceInstaller
         }
 
         $this->addToolRequirements($application, $namespace);
+
         $input = new StringInput($command.' --quiet --working-dir=.');
+
         $output = Factory::createOutput();
         $output->write('<info>Run with <comment>'.$input->__toString().'</comment></info>', true, IOInterface::VERBOSE);
 
@@ -98,9 +101,11 @@ final class ComposerNamespaceInstaller
     {
         $package = $composer->getPackage();
         $requires = $package->getRequires();
+
         $versionParser = new VersionParser();
         $parsedConstraints = array_map($versionParser->parseConstraints(...), $constraints);
         $prettyConstraint = implode(' && ', $constraints);
+
         $requires[$packageName] = new Link(
             $package->getName(),
             $packageName,
@@ -108,7 +113,9 @@ final class ComposerNamespaceInstaller
             Link::TYPE_REQUIRE,
             $prettyConstraint,
         );
+
         $package->setRequires($requires);
+
         $this->addStabilityFlag($composer, $packageName, $constraints);
     }
 
@@ -119,6 +126,7 @@ final class ComposerNamespaceInstaller
     {
         $package = $composer->getPackage();
         $stabilityFlags = $package->getStabilityFlags();
+
         $stabilityFlag = $stabilityFlags[$packageName] ?? BasePackage::STABILITY_STABLE;
         $minimumStability = BasePackage::STABILITIES[$package->getMinimumStability()];
 
@@ -144,6 +152,7 @@ final class ComposerNamespaceInstaller
                 '{(?<!^|as|[=>< ,]) *(?<!-)[, ](?!-) *(?!,|as|$)}',
                 $orConstraint,
             ) ?: [];
+
             array_push($constraints, ...$andConstraints);
         }
 
@@ -153,6 +162,7 @@ final class ComposerNamespaceInstaller
         foreach ($constraints as $constraint) {
             if (preg_match('{@(?<stability>stable|RC|beta|alpha|dev)$}i', $constraint, $match)) {
                 $stability = VersionParser::normalizeStability($match['stability']);
+
                 $explicitStability = max(
                     $explicitStability ?? BasePackage::STABILITY_STABLE,
                     BasePackage::STABILITIES[$stability],

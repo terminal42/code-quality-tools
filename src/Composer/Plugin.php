@@ -45,6 +45,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         }
 
         $event->getIO()->write('<warning>Installing code quality tools …</warning>');
+
         $this->executeAllNamespaces('install', $event->getIO());
     }
 
@@ -55,6 +56,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         }
 
         $event->getIO()->write('<warning>Updating code quality tools …</warning>');
+
         $this->executeAllNamespaces('update', $event->getIO());
     }
 
@@ -78,6 +80,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $processManager = new ProcessManager();
         $this->addNodeProcesses($processManager, $binRoots);
         $this->addComposerProcesses($processManager, $binRoots, $command);
+
         $processManager->run($io);
     }
 
@@ -121,6 +124,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
                 $composerCommand = \is_string($composerBinary)
                     ? [PHP_BINARY, $composerBinary, $command, '--quiet']
                     : ['composer', $command, '--quiet'];
+
                 $process = new Process($composerCommand, $namespace);
             }
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Composer\Semver\VersionParser;
 use Contao\EasyCodingStandard\Fixer\CommentLengthFixer;
-use Contao\EasyCodingStandard\Fixer\TypeHintOrderFixer;
 use PhpCsFixer\Fixer\Comment\HeaderCommentFixer;
+use PhpCsFixer\Fixer\LanguageConstruct\NullableTypeDeclarationFixer;
 use PhpCsFixer\Fixer\Whitespace\MethodChainingIndentationFixer;
 use Symplify\EasyCodingStandard\Config\ECSConfig;
 use Terminal42\CodeQualityTools\Composer\RootComposerJson;
@@ -28,7 +28,7 @@ if ($phpConstraint = $composerJson->platformRequirement('php') ?? $composerJson-
     $parsedConstraints = $versionParser->parseConstraints($phpConstraint);
 
     if ($parsedConstraints->matches($versionParser->parseConstraints('< 8'))) {
-        $skip[] = TypeHintOrderFixer::class;
+        $skip[] = NullableTypeDeclarationFixer::class;
     }
 }
 

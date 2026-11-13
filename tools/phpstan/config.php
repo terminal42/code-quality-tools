@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $includes = [__DIR__.'/config.neon'];
+
 $files = [
     'phpstan.neon',
     'phpstan.neon.dist',
